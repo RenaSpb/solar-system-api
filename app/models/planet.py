@@ -4,7 +4,14 @@ class Planet:
         self.name = name
         self.description = description
         self.size = size
-
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "size": self.size
+        }
 
 planets = [
     Planet(1, "Flora", "Beautiful", "big"),
