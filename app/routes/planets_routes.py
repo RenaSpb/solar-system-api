@@ -1,10 +1,10 @@
 from flask import Blueprint, abort, make_response
-from app.models.planet import planets, Planet
+from app.models.planet import planets
 
 planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 
 @planets_bp.get("")
-def get_all_books():
+def get_all_planets():
     planets_response = [planet.to_dict() for planet in planets]
     return planets_response
 
