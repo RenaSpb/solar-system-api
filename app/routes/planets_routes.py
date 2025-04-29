@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, make_response, request, Response
+from flask import Blueprint, abort, make_response, request, Response, jsonify
 from app.models.planet import Planet
 from ..db import db
 
@@ -61,7 +61,7 @@ def get_all_planets():
             }
         )
 
-    return planets_response
+    return jsonify(planets_response)
 
 # http://127.0.0.1:5000/planets
 # http://127.0.0.1:5000/planets?description=test
