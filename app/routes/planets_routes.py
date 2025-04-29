@@ -37,7 +37,17 @@ def create_planet():
 
 @planets_bp.get("")
 def get_all_planets():
-    query = db.select(Planet).order_by(Planet.id)
+    query = db.select(Planet)
+
+    description_param = request.args.get("description")
+    if description_param:
+        query = query.where(Planet.description.ilike(f"%{description_param}%"))
+
+    size_param = request.args.get("size")
+    if size_param:
+        query = query.where(Planet.size.ilike(f"%{size_param}%"))
+
+    query = query.order_by(Planet.id)
     planets = db.session.scalars(query)
 
     planets_response = []
@@ -52,6 +62,11 @@ def get_all_planets():
         )
 
     return planets_response
+
+# http://127.0.0.1:5000/planets
+# http://127.0.0.1:5000/planets?description=test
+# http://127.0.0.1:5000/planets?size=small
+# http://127.0.0.1:5000/planets?size=small&description=test
 
 @planets_bp.put("/<planet_id>")
 def update_planet(planet_id):
@@ -73,6 +88,22 @@ def delete_book(planet_id):
 
     return Response(status=204, mimetype="application/json")
 
+@planets_bp.patch("/<planet_id>")
+def update_part_planet(planet_id):
+    planet = validate_planet(planet_id)
+    request_body = request.get_json()
+
+    if "name" in request_body:
+        planet.name = request_body["name"]
+    if "size" in request_body:
+        planet.size = request_body["size"]
+    if "description" in request_body:
+        planet.description = request_body["description"]
+
+    db.session.commit()
+
+    return Response(status=204, mimetype="application/json")
+
 
 def validate_planet(planet_id):
     try:
@@ -89,4 +120,3 @@ def validate_planet(planet_id):
         abort(make_response(response, 404))
 
     return planet
-   
