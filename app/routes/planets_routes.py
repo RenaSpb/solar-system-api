@@ -23,7 +23,7 @@ def get_all_planets():
     return jsonify(result)
 
 
-# 在 planets_routes.py 添加 GET 单条行星路由
+# 在 planets_routes.py add GET
 @planets_bp.get("/<planet_id>")
 def get_one_planet(planet_id):
     try:
@@ -76,9 +76,7 @@ def delete_planet(planet_id):
     
 @planets_bp.post("")
 def create_planet():
-    print("🚀 [ROUTE] enter create_planet")        # ← 加在最前面
     request_data = request.get_json()
-    print("📥 [ROUTE] got request_data:", request_data)
 
     try:
         new_planet = Planet(
@@ -87,15 +85,10 @@ def create_planet():
             size=request_data["size"]
         )
     except KeyError as e:
-        print("⚠️ [ROUTE] missing field:", e)      # ← 捕获 KeyError
         return make_response({"error": f"Missing field: {e}"}, 400)
 
-    print("💾 [ROUTE] adding to session")
     db.session.add(new_planet)
-    print("💾 [ROUTE] before commit")
     db.session.commit()
-    print("💾 [ROUTE] after commit")
 
     res = jsonify({"message": f"Planet {new_planet.name} created", "id": new_planet.id})
-    print("✅ [ROUTE] returning response:", res)   # ← 看返回值
     return res, 201
