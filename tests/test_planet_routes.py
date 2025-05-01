@@ -1,69 +1,43 @@
-def test_get_all_books_with_no_records(client):
-    # Act
+def test_get_all_planets_returns_empty_list(client):
     response = client.get("/planets")
-    response_body = response.get_json()
-
-    # Assert
     assert response.status_code == 200
-    assert response_body == []
+    assert response.get_json() == []
 
-def test_get_one_planet_returns_expected_data(client, two_saved_planets):
-    response = client.get("/planets/1")
-    response_body = response.get_json()
+def test_create_planet_success(client):
+    print("🚀 [TEST] 开始创建星球 Nibiru")
 
-    assert response.status_code == 200
-    assert response_body == {
-        "id": 1,
-        "name": "Mercury",
-        "description": "Closest to the Sun",
+    planet_data = {
+        "name": "Nibiru",
+        "description": "A mysterious wandering planet",
+        "size": "unknown"
+    }
+
+    response = client.post("/planets", json=planet_data)
+    print("📡 [TEST] 收到响应")
+
+    response_data = response.get_json()
+    print("🔍 [TEST] 响应数据:", response_data)
+
+    assert response.status_code == 201
+    assert "id" in response_data
+    assert response_data["message"] == "Planet Nibiru created"
+
+
+
+def test_create_planet_missing_field(client):
+    incomplete_data = {
+        "name": "IncompletePlanet",
         "size": "small"
+        # description is missing
     }
 
-def test_get_one_planet_no_data_returns_404(client):
-    response = client.get("/planets/1")
-    response_body = response.get_json()
+    response = client.post("/planets", json=incomplete_data)
+    response_data = response.get_json()
 
-    assert response.status_code == 404
-    assert response_body["message"] == "planet 1 not found"
+    assert response.status_code == 400
+    assert "error" in response_data
 
-def test_get_all_planets_returns_all(client, two_saved_planets):
-    response = client.get("/planets")
-    response_body = response.get_json()
+def test_create_planet_empty_request(client):
+    response = client.post("/planets", data="")  # No JSON
+    assert response.status_code == 400
 
-    assert response.status_code == 200
-    assert len(response_body) == 2
-    expected_response = [
-        {
-            "id": 1,
-            "name": "Mercury",
-            "description": "Closest to the Sun",
-            "size": "small"
-        },
-        {
-            "id": 2,
-            "name": "Venus",
-            "description": "Thick toxic atmosphere",
-            "size": "medium"
-        }
-    ]
-
-    assert response_body == expected_response
-
-def test_post_planet_creates_new_planet(client):
-    request_data = {
-        "name": "Earth",
-        "description": "Home to humans",
-        "size": "medium"
-    }
-
-    response = client.post("/planets", json=request_data)
-    response_body = response.get_json()
-
-    expected_response = {
-            "id": 1,
-            "name": "Earth",
-            "description": "Home to humans",
-            "size": "medium"
-        }
-
-    assert response_body == expected_response

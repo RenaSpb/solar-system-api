@@ -1,122 +1,101 @@
-from flask import Blueprint, abort, make_response, request, Response, jsonify
+from flask import Blueprint, jsonify, abort, make_response, request
 from app.models.planet import Planet
-from ..db import db
+from app import db
+
 
 planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 
-
-@planets_bp.get("/<planet_id>")
-def get_one_planet(planet_id):
-    planet = validate_planet(planet_id)
-
-    return {
-        "id": planet.id,
-        "name": planet.name,
-        "description": planet.description,
-        "size" : planet.size
-    }, 200
-
-@planets_bp.post("")
-def create_planet():
-    request_body = request.get_json()
-    name = request_body["name"]
-    description = request_body["description"]
-    size = request_body["size"]
-
-    new_planet = Planet(name=name, description=description, size=size)
-    db.session.add(new_planet)
-    db.session.commit()
-
-    response = {
-        "id": new_planet.id,
-        "name": new_planet.name,
-        "description": new_planet.description,
-        "size": new_planet.size,
-    }
-    return response, 201
-
 @planets_bp.get("")
 def get_all_planets():
-    query = db.select(Planet)
-
-    description_param = request.args.get("description")
-    if description_param:
-        query = query.where(Planet.description.ilike(f"%{description_param}%"))
-
     size_param = request.args.get("size")
+    description_param = request.args.get("description")
+
+    query = Planet.query
+
     if size_param:
         query = query.where(Planet.size.ilike(f"%{size_param}%"))
 
-    query = query.order_by(Planet.id)
-    planets = db.session.scalars(query)
+    if description_param:
+        query = query.where(Planet.description.ilike(f"%{description_param}%"))
 
-    planets_response = []
-    for planet in planets:
-        planets_response.append(
-            {
-                "id": planet.id,
-                "name": planet.name,
-                "description": planet.description,
-                "size": planet.size,
-            }
-        )
+    planets = query.all()
+    result = [planet.to_dict() for planet in planets]
+    return jsonify(result)
 
-    return jsonify(planets_response)
 
-# http://127.0.0.1:5000/planets
-# http://127.0.0.1:5000/planets?description=test
-# http://127.0.0.1:5000/planets?size=small
-# http://127.0.0.1:5000/planets?size=small&description=test
+# 在 planets_routes.py 添加 GET 单条行星路由
+@planets_bp.get("/<planet_id>")
+def get_one_planet(planet_id):
+    try:
+        planet_id = int(planet_id)
+    except ValueError:
+        return make_response({"error": f"Invalid planet id '{planet_id}'"}, 400)
+    
+    planet = Planet.query.get(planet_id)
+    if planet:
+        return planet.to_dict(), 200
+    return make_response({"error": f"Planet with id {planet_id} not found"}, 404)
 
 @planets_bp.put("/<planet_id>")
 def update_planet(planet_id):
-    planet = validate_planet(planet_id)
-    request_body = request.get_json()
+    try:
+        planet_id = int(planet_id)
+    except ValueError:
+        return make_response({"error": f"Invalid planet id '{planet_id}'"}, 400)
+    
+    planet = Planet.query.get(planet_id)
+    if not planet:
+        return make_response({"error": f"Planet with id {planet_id} not found"}, 404)
+    
+    request_data = request.get_json()
+    planet.name = request_data.get("name", planet.name)
+    planet.description = request_data.get("description", planet.description)
+    planet.size = request_data.get("size", planet.size)
 
-    planet.name = request_body["name"]
-    planet.size = request_body["size"]
-    planet.description = request_body["description"]
     db.session.commit()
 
-    return Response(status=204, mimetype="application/json")
+    return jsonify({"message": f"Planet {planet_id} successfully updated"}), 200
 
 @planets_bp.delete("/<planet_id>")
-def delete_book(planet_id):
-    planet = validate_planet(planet_id)
+def delete_planet(planet_id):
+    
+    try:
+        planet_id = int(planet_id)
+    except ValueError:
+        return make_response({"error": f"Invalid planet id '{planet_id}'"}, 400)
+    
+    planet = Planet.query.get(planet_id)
+    if not planet:
+        return make_response({"error": f"Planet with id {planet_id} not found"}, 404)
+    
     db.session.delete(planet)
     db.session.commit()
 
-    return Response(status=204, mimetype="application/json")
+    return jsonify({"message": f"Planet {planet_id} successfully deleted"}), 200
 
-@planets_bp.patch("/<planet_id>")
-def update_part_planet(planet_id):
-    planet = validate_planet(planet_id)
-    request_body = request.get_json()
+    
+@planets_bp.post("")
+def create_planet():
+    print("🚀 [ROUTE] enter create_planet")        # ← 加在最前面
+    request_data = request.get_json()
+    print("📥 [ROUTE] got request_data:", request_data)
 
-    if "name" in request_body:
-        planet.name = request_body["name"]
-    if "size" in request_body:
-        planet.size = request_body["size"]
-    if "description" in request_body:
-        planet.description = request_body["description"]
-
-    db.session.commit()
-
-    return Response(status=204, mimetype="application/json")
-
-
-def validate_planet(planet_id):
     try:
-        planet_id = int(planet_id)
-    except:
-        response = {"message": f"planet {planet_id} invalid"}
-        abort(make_response(response, 400))
-        
-    query = db.select(Planet).where(Planet.id == planet_id)
-    planet = db.session.scalar(query)
+        new_planet = Planet(
+            name=request_data["name"],
+            description=request_data["description"],
+            size=request_data["size"]
+        )
+    except KeyError as e:
+        print("⚠️ [ROUTE] missing field:", e)      # ← 捕获 KeyError
+        return make_response({"error": f"Missing field: {e}"}, 400)
 
-    if not planet:
-        response = {"message": f"planet {planet_id} not found"}
-        abort(make_response(response, 404))
+    print("💾 [ROUTE] adding to session")
+    db.session.add(new_planet)
+    print("💾 [ROUTE] before commit")
+    db.session.commit()
+    print("💾 [ROUTE] after commit")
 
-    return planet
+    res = jsonify({"message": f"Planet {new_planet.name} created", "id": new_planet.id})
+    print("✅ [ROUTE] returning response:", res)   # ← 看返回值
+    return res, 201
