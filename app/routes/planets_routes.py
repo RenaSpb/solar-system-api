@@ -9,12 +9,7 @@ planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 def get_one_planet(planet_id):
     planet = validate_planet(planet_id)
 
-    return {
-        "id": planet.id,
-        "name": planet.name,
-        "description": planet.description,
-        "size" : planet.size
-    }, 200
+    return planet.to_dict, 200
 
 @planets_bp.post("")
 def create_planet():
@@ -27,13 +22,7 @@ def create_planet():
     db.session.add(new_planet)
     db.session.commit()
 
-    response = {
-        "id": new_planet.id,
-        "name": new_planet.name,
-        "description": new_planet.description,
-        "size": new_planet.size,
-    }
-    return response, 201
+    return new_planet.to_dict, 201
 
 @planets_bp.get("")
 def get_all_planets():
@@ -50,16 +39,7 @@ def get_all_planets():
     query = query.order_by(Planet.id)
     planets = db.session.scalars(query)
 
-    planets_response = []
-    for planet in planets:
-        planets_response.append(
-            {
-                "id": planet.id,
-                "name": planet.name,
-                "description": planet.description,
-                "size": planet.size,
-            }
-        )
+    planets_response = [planet.to_dict for planet in planets]
 
     return jsonify(planets_response)
 
