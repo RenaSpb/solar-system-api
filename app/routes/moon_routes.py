@@ -11,6 +11,7 @@ bp = Blueprint("moons_bp", __name__, url_prefix="/planets")
 def create_moon(planet_id):
     planet = validate_model(Planet, planet_id)
     request_body = request.get_json()
+    request_body["planet_id"] = planet.id
 
     try:
         new_moon = Moon.from_dict(request_body)
