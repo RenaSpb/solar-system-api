@@ -1,11 +1,13 @@
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from ..db import db
+from typing import Optional
 
 class Planet(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str]
     description: Mapped[str]
     size: Mapped[str]
+    moons: Mapped[Optional[list["Moon"]]] = relationship(back_populates="planet")
 
 
     def to_dict(self):

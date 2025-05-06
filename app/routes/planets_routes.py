@@ -3,16 +3,15 @@ from app.models.planet import Planet
 from ..db import db
 from .route_utilities import validate_model
 
-planets_bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
+bp = Blueprint("planets_bp", __name__, url_prefix="/planets")
 
-
-@planets_bp.get("/<planet_id>")
+@bp.get("/<planet_id>")
 def get_one_planet(planet_id):
     planet = validate_model(Planet, planet_id)
 
     return planet.to_dict(), 200
 
-@planets_bp.post("")
+@bp.post("")
 def create_planet():
     request_body = request.get_json()
 
@@ -22,7 +21,7 @@ def create_planet():
 
     return new_planet.to_dict(), 201
 
-@planets_bp.get("")
+@bp.get("")
 def get_all_planets():
     query = db.select(Planet)
 
@@ -39,14 +38,9 @@ def get_all_planets():
 
     planets_response = [planet.to_dict() for planet in planets]
 
-    return jsonify(planets_response)
+    return planets_response
 
-# http://127.0.0.1:5000/planets
-# http://127.0.0.1:5000/planets?description=test
-# http://127.0.0.1:5000/planets?size=small
-# http://127.0.0.1:5000/planets?size=small&description=test
-
-@planets_bp.put("/<planet_id>")
+@bp.put("/<planet_id>")
 def update_planet(planet_id):
     planet = validate_model(Planet, planet_id)
     request_body = request.get_json()
@@ -58,7 +52,7 @@ def update_planet(planet_id):
 
     return Response(status=204, mimetype="application/json")
 
-@planets_bp.delete("/<planet_id>")
+@bp.delete("/<planet_id>")
 def delete_book(planet_id):
     planet = validate_model(Planet, planet_id)
     db.session.delete(planet)
@@ -66,7 +60,7 @@ def delete_book(planet_id):
 
     return Response(status=204, mimetype="application/json")
 
-@planets_bp.patch("/<planet_id>")
+@bp.patch("/<planet_id>")
 def update_part_planet(planet_id):
     planet = validate_model(Planet, planet_id)
     request_body = request.get_json()
